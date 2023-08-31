@@ -32,11 +32,6 @@ public class Entrega {
 
     @Override
     public String toString() {
-        return "Entrega{" +
-                "codigo=" + codigo +
-                ", valor=" + valor +
-                ", descricao='" + descricao + '\'' +
-                ", cliente=" + cliente +
-                '}';
+        return codigo + "; " + valor + "; " + descricao + "; " + cliente.getEmail();
     }
 }

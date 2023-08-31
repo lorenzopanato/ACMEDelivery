@@ -38,4 +38,8 @@ public class CadastroEntregas {
 
         return null;
     }
+
+    public List<Entrega> getEntregas() {
+        return entregas;
+    }
 }

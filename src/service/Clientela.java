@@ -27,4 +27,8 @@ public class Clientela {
         }
         return null;
     }
+
+    public List<Cliente> getClientela() {
+        return clientela;
+    }
 }
