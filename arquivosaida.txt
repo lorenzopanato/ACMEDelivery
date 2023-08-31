@@ -1,0 +1,3 @@
+1; maria@e-mail.com; Maria da Silva; R. Um, 1
+1; joana@mail.com; Joana Dark; Av. Dois, 2
+1; pedro@email.com.br; Pedro de Souza; Estrada Tres, 3
