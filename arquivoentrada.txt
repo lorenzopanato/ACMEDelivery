@@ -1,39 +1,43 @@
-maria@e-mail.com
-Maria da Silva
-R. Um, 1
-maria@e-mail.com
-Maria da Silva
-R. Um, 1
-joana@mail.com
-Joana Dark
-Av. Dois, 2
+ana@e-mail.com
+Ana da Silva
+Av. Um, 1
+bianca@mail.com
+Bianca Souza
+R. Dois, 2
 pedro@email.com.br
 Pedro de Souza
-Estrada Tres, 3
+Travessa Tres, 3
+ana@e-mail.com
+Ana Maria de Souza
+Av. Quatro, 4
 -1
-111
-111.11
-Pizza
-maria@e-mail.com
-222
-222.22
-Espada
-joana@mail.com
-333
-333.33
-SSD
-pedro@email.com.br
-444
-444.44
-Escudo
-joana@mail.com
-555
-555.55
-Webcam
-pedro@email.com.br
+11
+11.11
+Salada
+ana@e-mail.com
+22
+22.22
+Refrigerante
+ana@e-mail.com
+33
+33.33
+Suco
+cliente@email.com.br
+44
+44.44
+PS5
+bianca@mail.com
+55
+55.55
+PS VR2
+bianca@mail.com
+66
+66.66
+PS Dualsense
+inexistente@mail.com
 -1
-maria@e-mail.com
-333
-joana@mail.com
-111
+joao@e-mail.com
+99
+pedro@email.com.br
+11111
 pedro@email.com.br

@@ -22,10 +22,6 @@ public class Entrega {
         return valor;
     }
 
-    public String getDescricao() {
-        return descricao;
-    }
-
     public Cliente getCliente() {
         return cliente;
     }

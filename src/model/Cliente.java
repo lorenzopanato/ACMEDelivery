@@ -18,7 +18,7 @@ public class Cliente {
     }
 
     public boolean adicionaEntrega(Entrega entrega) {
-
+        //apenas adiciona a entrega ao cliente. As validacoes sao feitas na classe Clientela
         return entregas.add(entrega);
     }
 

@@ -9,7 +9,6 @@ import java.util.List;
 public class CadastroEntregas {
 
     private List<Entrega> entregas;
-    private Clientela clientela;
 
     public CadastroEntregas() {
         entregas = new ArrayList<>();
@@ -31,10 +30,10 @@ public class CadastroEntregas {
     }
 
     public List<Entrega> pesquisaEntrega(String email) {
-        Cliente cliente = clientela.pesquisaCliente(email);
-
-        if(cliente != null)
-            return cliente.pesquisaEntregas();
+        for(Entrega e : entregas) {
+            if(e.getCliente().getEmail().equals(email))
+                return e.getCliente().pesquisaEntregas();
+        }
 
         return null;
     }
