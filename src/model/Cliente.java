@@ -18,6 +18,7 @@ public class Cliente {
     }
 
     public boolean adicionaEntrega(Entrega entrega) {
+
         return entregas.add(entrega);
     }
 

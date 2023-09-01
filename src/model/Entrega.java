@@ -32,6 +32,6 @@ public class Entrega {
 
     @Override
     public String toString() {
-        return codigo + "; " + valor + "; " + descricao + "; " + cliente.getEmail();
+        return codigo + "; " + valor + "; " + descricao;
     }
 }
