@@ -12,22 +12,24 @@ import java.util.Scanner;
 
 public class ACMEDelivery {
 
-    private Scanner entrada;
+    private Scanner entradaArquivo;
+    private Scanner entradaUsuario;
     private BufferedWriter saida;
     private Clientela clientela;
     private CadastroEntregas cadastroEntregas;
 
     public ACMEDelivery() {
         try {
+            BufferedReader streamEntrada = new BufferedReader(new FileReader("arquivoentrada.txt"));
+            entradaArquivo = new Scanner(streamEntrada);
+            saida = new BufferedWriter(new FileWriter("arquivosaida.txt"));
+            entradaUsuario = new Scanner(System.in);
             clientela = new Clientela();
             cadastroEntregas = new CadastroEntregas();
 
-            BufferedReader streamEntrada = new BufferedReader(new FileReader("arquivoentrada.txt"));
-            entrada = new Scanner(streamEntrada);
-            saida = new BufferedWriter(new FileWriter("arquivosaida.txt"));
-
             Locale.setDefault(Locale.ENGLISH);
-            entrada.useLocale(Locale.ENGLISH);
+            entradaArquivo.useLocale(Locale.ENGLISH);
+            entradaUsuario.useLocale(Locale.ENGLISH);
 
         } catch (Exception e) {
             System.out.println("Erro no arquivo: " + e.getMessage());
@@ -35,6 +37,7 @@ public class ACMEDelivery {
     }
 
     public void executar() {
+        //executa a leitura e escrita dos arquivos
         try {
             cadastrarCliente();
             cadastrarEntrega();
@@ -50,23 +53,104 @@ public class ACMEDelivery {
             System.out.println("Erro ao executar a aplicação: " + e.getMessage());
         } finally {
             try {
-                entrada.close();
+                entradaArquivo.close();
                 saida.close();
             } catch (IOException e) {
-                System.out.println("Erro ao fechar o output: " + e.getMessage());
+                System.out.println("Erro ao fechar o output/input: " + e.getMessage());
             }
         }
+
+        //executa o sistema de menu do usuario
+        int opcao = 0;
+        do {
+            menu();
+
+            //verifica se o tipo de dado é valido
+            while (!entradaUsuario.hasNextInt()) {
+                System.out.println("Entrada inválida. Tente novamente.");
+                entradaUsuario.nextLine();
+            }
+
+            opcao = entradaUsuario.nextInt();
+            entradaUsuario.nextLine();
+
+            switch (opcao) {
+                case 1:
+                    cadastrarClienteEEntregaUsuario();
+                    break;
+                case 2:
+                    mostrarClientesEEntregasUsuario();
+                    break;
+                case 0:
+                    System.out.println("Encerrando a execução...");
+                    break;
+                default:
+                    System.out.println("Opção inválida. Tente novamente.");
+                    break;
+            }
+        } while (opcao != 0);
+
+        entradaUsuario.close();
+    }
+
+    private void menu() {
+        System.out.println("------------------------------------------------------------");
+        System.out.println("                    Menu de opções:");
+        System.out.println("[1] Cadastrar um novo cliente e uma entrega correspondente");
+        System.out.println("[2] Mostrar todos os clientes e entregas cadastrados");
+        System.out.println("[0] Sair");
+        System.out.println("------------------------------------------------------------");
+    }
+
+    //cadastrar cliente pelo input do usuario
+    private void cadastrarClienteEEntregaUsuario() {
+        System.out.println("Cadastro do cliente: ");
+        System.out.println("Informe o email do cliente:");
+        String email = entradaUsuario.nextLine();
+        System.out.println("Informe o nome do cliente:");
+        String nome = entradaUsuario.nextLine();
+        System.out.println("Informe o endereco do cliente:");
+        String endereco = entradaUsuario.nextLine();
+
+        var cliente = new Cliente(email, nome, endereco);
+
+        clientela.cadastraCliente(cliente);
+        cadastrarEntregaUsuario(cliente);
+    }
+
+    //cadastrar entrega pelo input do usuario
+    private void cadastrarEntregaUsuario(Cliente cliente) {
+        System.out.println("Cadastro da entrega: ");
+        System.out.println("Informe o codigo da entrega:");
+        int codigo = entradaUsuario.nextInt();
+        entradaUsuario.nextLine();
+        System.out.println("Informe o valor da entrega:");
+        double valor = entradaUsuario.nextDouble();
+        entradaUsuario.nextLine();
+        System.out.println("Informe a descrição da entrega:");
+        String descricao = entradaUsuario.nextLine();
+
+        var entrega = new Entrega(codigo, valor, descricao, cliente);
+
+        cadastroEntregas.cadastraEntrega(entrega);
+        cliente.adicionaEntrega(entrega);
+    }
+
+    private void mostrarClientesEEntregasUsuario() {
+        System.out.println("Clientes cadastrados: ");
+        clientela.getClientela().forEach( cliente -> System.out.println("Cliente: " + cliente +
+                "; Entregas: " + cliente.pesquisaEntregas()));
     }
 
     private void cadastrarCliente() {
-        while (entrada.hasNext()) {
-            String email = entrada.nextLine();
+        while (entradaArquivo.hasNext()) {
+            String email = entradaArquivo.nextLine();
 
             if (email.equals("-1"))
                 break;
 
-            String nome = entrada.nextLine();
-            String endereco = entrada.nextLine();
+            String nome = entradaArquivo.nextLine();
+            String endereco = entradaArquivo.nextLine();
 
             Cliente cliente = new Cliente(email, nome, endereco);
 
@@ -81,19 +165,19 @@ public class ACMEDelivery {
     }
 
     private void cadastrarEntrega() {
-        while (entrada.hasNext()) {
-            int codigo = entrada.nextInt();
-            entrada.nextLine();
+        while (entradaArquivo.hasNext()) {
+            int codigo = entradaArquivo.nextInt();
+            entradaArquivo.nextLine();
 
             if (codigo == -1)
                 break;
 
-            double valor = entrada.nextDouble();
-            entrada.nextLine();
+            double valor = entradaArquivo.nextDouble();
+            entradaArquivo.nextLine();
 
-            String descricao = entrada.nextLine();
+            String descricao = entradaArquivo.nextLine();
 
-            String email = entrada.nextLine();
+            String email = entradaArquivo.nextLine();
 
             Cliente cliente = clientela.pesquisaCliente(email);
             Entrega entrega = new Entrega(codigo, valor, descricao, cliente);
@@ -139,7 +223,7 @@ public class ACMEDelivery {
     }
 
     private void mostrarDadosCliente() {
-        String email = entrada.nextLine();
+        String email = entradaArquivo.nextLine();
 
         Cliente cliente = clientela.pesquisaCliente(email);
 
@@ -154,8 +238,8 @@ public class ACMEDelivery {
     }
 
     private void mostrarDadosEntrega() {
-        int codigo = entrada.nextInt();
-        entrada.nextLine();
+        int codigo = entradaArquivo.nextInt();
+        entradaArquivo.nextLine();
 
         Entrega entrega = cadastroEntregas.pesquisaEntrega(codigo);
 
@@ -171,7 +255,7 @@ public class ACMEDelivery {
     }
 
     private void mostrarDadosEntregasCliente() {
-        String email = entrada.nextLine();
+        String email = entradaArquivo.nextLine();
         var entregasCliente = cadastroEntregas.pesquisaEntrega(email);
 
         try {
@@ -217,8 +301,8 @@ public class ACMEDelivery {
     }
 
     private void mostrarEnderecoDeEntrega() {
-        int codigo = entrada.nextInt();
-        entrada.nextLine();
+        int codigo = entradaArquivo.nextInt();
+        entradaArquivo.nextLine();
 
         Entrega entrega = cadastroEntregas.pesquisaEntrega(codigo);
 
@@ -233,7 +317,7 @@ public class ACMEDelivery {
     }
 
     private void somatorioValoresDeEntregasDeCliente() {
-        String email = entrada.nextLine();
+        String email = entradaArquivo.nextLine();
         Cliente cliente = clientela.pesquisaCliente(email);
 
         double somatorio = 0;
