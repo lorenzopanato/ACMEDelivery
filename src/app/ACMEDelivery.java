@@ -12,9 +12,13 @@ import java.util.Scanner;
 
 public class ACMEDelivery {
 
+    // input/output de arquivos
     private Scanner entradaArquivo;
+    private PrintWriter saida;
+
+    //input do menu do usuario
     private Scanner entradaUsuario;
-    private BufferedWriter saida;
+
     private Clientela clientela;
     private CadastroEntregas cadastroEntregas;
 
@@ -22,7 +26,7 @@ public class ACMEDelivery {
         try {
             BufferedReader streamEntrada = new BufferedReader(new FileReader("arquivoentrada.txt"));
             entradaArquivo = new Scanner(streamEntrada);
-            saida = new BufferedWriter(new FileWriter("arquivosaida.txt"));
+            saida = new PrintWriter("arquivosaida.txt");
             entradaUsuario = new Scanner(System.in);
             clientela = new Clientela();
             cadastroEntregas = new CadastroEntregas();
@@ -31,14 +35,14 @@ public class ACMEDelivery {
             entradaArquivo.useLocale(Locale.ENGLISH);
             entradaUsuario.useLocale(Locale.ENGLISH);
 
-        } catch (Exception e) {
-            System.out.println("Erro no arquivo: " + e.getMessage());
+        } catch (IOException e) {
+            System.out.println("Erro ao abrir recursos: " + e.getMessage());
         }
     }
 
     public void executar() {
-        //executa a leitura e escrita dos arquivos
         try {
+            //executa metodos de leitura e escrita de arquivos
             cadastrarCliente();
             cadastrarEntrega();
             mostrarClientesCadastrados();
@@ -49,48 +53,45 @@ public class ACMEDelivery {
             mostrarDadosEntregaDeMaiorValor();
             mostrarEnderecoDeEntrega();
             somatorioValoresDeEntregasDeCliente();
+
+
+            //executa o sistema de menu do usuario
+            int opcao = 0;
+            do {
+                menu();
+
+                //verifica se o tipo de dado é valido
+                while (!entradaUsuario.hasNextInt()) {
+                    System.out.println("Entrada inválida. Tente novamente.");
+                    entradaUsuario.nextLine();
+                }
+
+                opcao = entradaUsuario.nextInt();
+                entradaUsuario.nextLine();
+
+                switch (opcao) {
+                    case 1:
+                        cadastrarClienteUsuario();
+                        break;
+                    case 2:
+                        mostrarClientesEEntregas();
+                        break;
+                    case 0:
+                        System.out.println("Encerrando a execução...");
+                        break;
+                    default:
+                        System.out.println("Opção inválida. Tente novamente.");
+                        break;
+                }
+            } while (opcao != 0);
         } catch (Exception e) {
             System.out.println("Erro ao executar a aplicação: " + e.getMessage());
-        } finally {
-            try {
-                entradaArquivo.close();
-                saida.close();
-            } catch (IOException e) {
-                System.out.println("Erro ao fechar o output/input: " + e.getMessage());
-            }
         }
-
-        //executa o sistema de menu do usuario
-        int opcao = 0;
-        do {
-            menu();
-
-            //verifica se o tipo de dado é valido
-            while (!entradaUsuario.hasNextInt()) {
-                System.out.println("Entrada inválida. Tente novamente.");
-                entradaUsuario.nextLine();
-            }
-
-            opcao = entradaUsuario.nextInt();
-            entradaUsuario.nextLine();
-
-            switch (opcao) {
-                case 1:
-                    cadastrarClienteEEntregaUsuario();
-                    break;
-                case 2:
-                    mostrarClientesEEntregasUsuario();
-                    break;
-                case 0:
-                    System.out.println("Encerrando a execução...");
-                    break;
-                default:
-                    System.out.println("Opção inválida. Tente novamente.");
-                    break;
-            }
-        } while (opcao != 0);
-
-        entradaUsuario.close();
+        finally {
+            entradaArquivo.close();
+            saida.close();
+            entradaUsuario.close();
+        }
     }
 
     private void menu() {
@@ -103,7 +104,7 @@ public class ACMEDelivery {
     }
 
     //cadastrar cliente pelo input do usuario
-    private void cadastrarClienteEEntregaUsuario() {
+    private void cadastrarClienteUsuario() {
         System.out.println("Cadastro do cliente: ");
         System.out.println("Informe o email do cliente:");
         String email = entradaUsuario.nextLine();
@@ -136,10 +137,14 @@ public class ACMEDelivery {
         cliente.adicionaEntrega(entrega);
     }
 
-    private void mostrarClientesEEntregasUsuario() {
-        System.out.println("Clientes cadastrados: ");
-        clientela.getClientela().forEach( cliente -> System.out.println("Cliente: " + cliente +
-                "; Entregas: " + cliente.pesquisaEntregas()));
+    private void mostrarClientesEEntregas() {
+        saida.println();
+        saida.println("Clientes cadastrados: ");
+        clientela.getClientela().forEach( cliente ->
+                saida.println("Cliente: " + cliente + "; Entregas: " + cliente.pesquisaEntregas()));
+
+        //adiciona as informacoes no arquivo de saida em tempo real
+        saida.flush();
     }
 
     private void cadastrarCliente() {
@@ -154,13 +159,9 @@ public class ACMEDelivery {
 
             Cliente cliente = new Cliente(email, nome, endereco);
 
-            try {
-                //verifica se existe algum cliente no sistema com o email lido
-                if(clientela.cadastraCliente(cliente))
-                    saida.write("1; " + cliente + "\n");
-            } catch (IOException e) {
-                System.out.println("Erro ao escrever no arquivo de saída (passo 1): " + e.getMessage());
-            }
+            //verifica se existe algum cliente no sistema com o email lido
+            if(clientela.cadastraCliente(cliente))
+                saida.println("1; " + cliente);
         }
     }
 
@@ -182,14 +183,10 @@ public class ACMEDelivery {
             Cliente cliente = clientela.pesquisaCliente(email);
             Entrega entrega = new Entrega(codigo, valor, descricao, cliente);
 
-            try {
-                //verifica se o cliente existe no sistema e se o codigo nao e repetido
-                if (cliente != null && cadastroEntregas.cadastraEntrega(entrega)) {
-                    cliente.adicionaEntrega(entrega);
-                    saida.write("2; " + entrega + "; " + cliente.getEmail() + "\n");
-                }
-            } catch (IOException e) {
-                System.out.println("Erro ao escrever no arquivo de saída (passo 2): " + e.getMessage());
+            //verifica se o cliente existe no sistema e se o codigo nao e repetido
+            if (cliente != null && cadastroEntregas.cadastraEntrega(entrega)) {
+                cliente.adicionaEntrega(entrega);
+                saida.println("2; " + entrega + "; " + cliente.getEmail());
             }
         }
     }
@@ -201,11 +198,7 @@ public class ACMEDelivery {
             count++;
         }
 
-        try {
-            saida.write("3; " + count + "\n");
-        } catch (IOException e) {
-            System.out.println("Erro ao escrever no arquivo de saída (passo 3): " + e.getMessage());
-        }
+        saida.println("3; " + count);
     }
 
     private void mostrarEntregasCadastradas() {
@@ -215,11 +208,7 @@ public class ACMEDelivery {
             count++;
         }
 
-        try {
-            saida.write("4; " + count + "\n");
-        } catch (IOException e) {
-            System.out.println("Erro ao escrever no arquivo de saída (passo 4): " + e.getMessage());
-        }
+        saida.println("4; " + count);
     }
 
     private void mostrarDadosCliente() {
@@ -227,14 +216,10 @@ public class ACMEDelivery {
 
         Cliente cliente = clientela.pesquisaCliente(email);
 
-        try {
-            if (cliente == null)
-                saida.write("5; Cliente inexistente\n");
-            else
-                saida.write("5; " + cliente + "\n");
-        } catch (IOException e) {
-            System.out.println("Erro ao escrever no arquivo de saída (passo 5): " + e.getMessage());
-        }
+        if (cliente == null)
+            saida.println("5; Cliente inexistente");
+        else
+            saida.println("5; " + cliente);
     }
 
     private void mostrarDadosEntrega() {
@@ -243,37 +228,29 @@ public class ACMEDelivery {
 
         Entrega entrega = cadastroEntregas.pesquisaEntrega(codigo);
 
-        try {
-            if (entrega == null)
-                saida.write("6; Entrega inexistente\n");
-            else
-                saida.write("6; " + entrega + "; " + entrega.getCliente().getEmail() + "; " + entrega.getCliente().getNome() +
-                        "; " + entrega.getCliente().getEndereco() + "\n");
-        } catch (IOException e) {
-            System.out.println("Erro ao escrever no arquivo de saída (passo 6): " + e.getMessage());
-        }
+        if (entrega == null)
+            saida.println("6; Entrega inexistente");
+        else
+            saida.println("6; " + entrega + "; " + entrega.getCliente().getEmail() + "; " + entrega.getCliente().getNome() +
+                    "; " + entrega.getCliente().getEndereco());
     }
 
     private void mostrarDadosEntregasCliente() {
         String email = entradaArquivo.nextLine();
         var entregasCliente = cadastroEntregas.pesquisaEntrega(email);
 
-        try {
-            if (clientela.pesquisaCliente(email) != null) {
-                //verifica se o cliente nao possui entregas
-                if(clientela.pesquisaCliente(email).pesquisaEntregas().isEmpty())
-                    saida.write("7; " + email + "; Nenhuma entrega para este cliente\n");
-                else {
-                    //percorre as entregas do cliente, mostrando uma por uma no output
-                    for (int i = 0; i < entregasCliente.size(); i++) {
-                        saida.write("7; " + email + "; " + entregasCliente.get(i) + "\n");
-                    }
+        if (clientela.pesquisaCliente(email) != null) {
+            //verifica se o cliente nao possui entregas
+            if(clientela.pesquisaCliente(email).pesquisaEntregas().isEmpty())
+                saida.println("7; " + email + "; Nenhuma entrega para este cliente");
+            else {
+                //percorre as entregas do cliente, mostrando uma por uma no output
+                for (int i = 0; i < entregasCliente.size(); i++) {
+                    saida.println("7; " + email + "; " + entregasCliente.get(i));
                 }
-            } else
-                saida.write("7; Cliente inexistente\n");
-        } catch (IOException e) {
-            System.out.println("Erro ao escrever no arquivo de saída (passo 7): " + e.getMessage());
-        }
+            }
+        } else
+            saida.println("7; Cliente inexistente");
     }
 
     private void mostrarDadosEntregaDeMaiorValor() {
@@ -290,14 +267,10 @@ public class ACMEDelivery {
             }
         }
 
-        try {
-            if (maiorEntrega == null)
-                saida.write("8; Entrega inexistente\n");
-            else
-                saida.write("8; " + maiorEntrega + "\n");
-        } catch (IOException e) {
-            System.out.println("Erro ao escrever no arquivo de saída (passo 8): " + e.getMessage() + "\n");
-        }
+        if (maiorEntrega == null)
+            saida.println("8; Entrega inexistente");
+        else
+            saida.println("8; " + maiorEntrega);
     }
 
     private void mostrarEnderecoDeEntrega() {
@@ -306,14 +279,10 @@ public class ACMEDelivery {
 
         Entrega entrega = cadastroEntregas.pesquisaEntrega(codigo);
 
-        try {
-            if (entrega == null)
-                saida.write("9; Entrega inexistente\n");
-            else
-                saida.write("9; " + entrega + "; " + entrega.getCliente().getEndereco() + "\n");
-        } catch (IOException e) {
-            System.out.println("Erro ao escrever no arquivo de saída (passo 9): " + e.getMessage() + "\n");
-        }
+        if (entrega == null)
+            saida.println("9; Entrega inexistente");
+        else
+            saida.println("9; " + entrega + "; " + entrega.getCliente().getEndereco());
     }
 
     private void somatorioValoresDeEntregasDeCliente() {
@@ -328,15 +297,11 @@ public class ACMEDelivery {
             }
         }
 
-        try {
-            if (cliente == null)
-                saida.write("10; Cliente inexistente");
-            else if(cliente.pesquisaEntregas().isEmpty())
-                saida.write("10; Entrega inexistente");
-            else                                                                    //arredonda o somatorio para duas casas decimais
-                saida.write("10; " + email + "; " + cliente.getNome() + "; " + new DecimalFormat("#.00").format(somatorio));
-        } catch (IOException e) {
-            System.out.println("Erro ao escrever no arquivo de saída (passo 10): " + e.getMessage() + "\n");
-        }
+        if (cliente == null)
+            saida.println("10; Cliente inexistente");
+        else if(cliente.pesquisaEntregas().isEmpty())
+            saida.println("10; Entrega inexistente");
+        else                                                                    //arredonda o somatorio para duas casas decimais
+            saida.println("10; " + email + "; " + cliente.getNome() + "; " + new DecimalFormat("#.00").format(somatorio));
     }
 }
