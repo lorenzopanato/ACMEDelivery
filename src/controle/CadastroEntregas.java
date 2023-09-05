@@ -1,7 +1,6 @@
-package service;
+package controle;
 
-import model.Cliente;
-import model.Entrega;
+import modelo.Entrega;
 
 import java.util.ArrayList;
 import java.util.List;

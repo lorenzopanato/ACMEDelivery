@@ -1,9 +1,9 @@
 package app;
 
-import model.Cliente;
-import model.Entrega;
-import service.CadastroEntregas;
-import service.Clientela;
+import modelo.Cliente;
+import modelo.Entrega;
+import controle.CadastroEntregas;
+import controle.Clientela;
 
 import java.io.*;
 import java.text.DecimalFormat;
