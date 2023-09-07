@@ -6,34 +6,31 @@ import controle.CadastroEntregas;
 import controle.Clientela;
 
 import java.io.*;
-import java.text.DecimalFormat;
+import java.nio.charset.Charset;
 import java.util.Locale;
 import java.util.Scanner;
 
 public class ACMEDelivery {
 
-    // input/output de arquivos
-    private Scanner entradaArquivo;
-    private PrintWriter saida;
-
-    //input do menu do usuario
-    private Scanner entradaUsuario;
-
+    private Scanner entrada;
+    private PrintStream saidaPadrao = System.out;
     private Clientela clientela;
     private CadastroEntregas cadastroEntregas;
 
     public ACMEDelivery() {
         try {
             BufferedReader streamEntrada = new BufferedReader(new FileReader("arquivoentrada.txt"));
-            entradaArquivo = new Scanner(streamEntrada);
-            saida = new PrintWriter("arquivosaida.txt");
-            entradaUsuario = new Scanner(System.in);
+            entrada = new Scanner(streamEntrada);
+
+            PrintStream streamSaida = new PrintStream(new File("arquivosaida.txt"), Charset.forName("UTF-8"));
+            System.setOut(streamSaida);
+
             clientela = new Clientela();
             cadastroEntregas = new CadastroEntregas();
 
             Locale.setDefault(Locale.ENGLISH);
-            entradaArquivo.useLocale(Locale.ENGLISH);
-            entradaUsuario.useLocale(Locale.ENGLISH);
+            entrada.useLocale(Locale.ENGLISH);
+            entrada.useLocale(Locale.ENGLISH);
 
         } catch (IOException e) {
             System.out.println("Erro ao abrir recursos: " + e.getMessage());
@@ -42,7 +39,7 @@ public class ACMEDelivery {
 
     public void executar() {
         try {
-            //executa metodos de leitura e escrita de arquivos
+            //executa os passos
             cadastrarCliente();
             cadastrarEntrega();
             mostrarClientesCadastrados();
@@ -54,6 +51,8 @@ public class ACMEDelivery {
             mostrarEnderecoDeEntrega();
             somatorioValoresDeEntregasDeCliente();
 
+            //restaura a saida padrao e a entrada para o console
+            restauraES();
 
             //executa o sistema de menu do usuario
             int opcao = 0;
@@ -61,17 +60,17 @@ public class ACMEDelivery {
                 menu();
 
                 //verifica se o tipo de dado é valido
-                while (!entradaUsuario.hasNextInt()) {
+                while (!entrada.hasNextInt()) {
                     System.out.println("Entrada inválida. Tente novamente.");
-                    entradaUsuario.nextLine();
+                    entrada.nextLine();
                 }
 
-                opcao = entradaUsuario.nextInt();
-                entradaUsuario.nextLine();
+                opcao = entrada.nextInt();
+                entrada.nextLine();
 
                 switch (opcao) {
                     case 1:
-                        cadastrarClienteUsuario();
+                        cadastrarClientePeloInputDoUsuario();
                         break;
                     case 2:
                         mostrarClientesEEntregas();
@@ -83,14 +82,20 @@ public class ACMEDelivery {
                         System.out.println("Opção inválida. Tente novamente.");
                         break;
                 }
+
+                if (opcao != 0) {
+                    System.out.println("\nDigite 3 para voltar ao menu:");
+
+                    while (!entrada.nextLine().equals("3")) {
+                        System.out.println("Opção inválida. Tente novamente.");
+                    }
+                }
             } while (opcao != 0);
         } catch (Exception e) {
             System.out.println("Erro ao executar a aplicação: " + e.getMessage());
         }
         finally {
-            entradaArquivo.close();
-            saida.close();
-            entradaUsuario.close();
+            entrada.close();
         }
     }
 
@@ -104,89 +109,95 @@ public class ACMEDelivery {
     }
 
     //cadastrar cliente pelo input do usuario
-    private void cadastrarClienteUsuario() {
+    private void cadastrarClientePeloInputDoUsuario() {
         System.out.println("Cadastro do cliente: ");
         System.out.println("Informe o email do cliente:");
-        String email = entradaUsuario.nextLine();
+        String email = entrada.nextLine();
         System.out.println("Informe o nome do cliente:");
-        String nome = entradaUsuario.nextLine();
+        String nome = entrada.nextLine();
         System.out.println("Informe o endereco do cliente:");
-        String endereco = entradaUsuario.nextLine();
+        String endereco = entrada.nextLine();
 
         var cliente = new Cliente(email, nome, endereco);
 
-        clientela.cadastraCliente(cliente);
-        cadastrarEntregaUsuario(cliente);
+        if(!clientela.cadastraCliente(cliente))
+            System.out.println("Erro: já existe um cliente com esse email no sistema");
+        else {
+            System.out.println("Cliente cadastrado com sucesso");
+            cadastrarEntregaPeloInputDoUsuario(cliente);
+        }
     }
 
     //cadastrar entrega pelo input do usuario
-    private void cadastrarEntregaUsuario(Cliente cliente) {
-        System.out.println("Cadastro da entrega: ");
+    private void cadastrarEntregaPeloInputDoUsuario(Cliente cliente) {
+        System.out.println("\nCadastro da entrega: ");
         System.out.println("Informe o codigo da entrega:");
-        int codigo = entradaUsuario.nextInt();
-        entradaUsuario.nextLine();
+        int codigo = entrada.nextInt();
+        entrada.nextLine();
         System.out.println("Informe o valor da entrega:");
-        double valor = entradaUsuario.nextDouble();
-        entradaUsuario.nextLine();
+        double valor = entrada.nextDouble();
+        entrada.nextLine();
         System.out.println("Informe a descrição da entrega:");
-        String descricao = entradaUsuario.nextLine();
+        String descricao = entrada.nextLine();
 
         var entrega = new Entrega(codigo, valor, descricao, cliente);
 
-        cadastroEntregas.cadastraEntrega(entrega);
-        cliente.adicionaEntrega(entrega);
+        if(!cadastroEntregas.cadastraEntrega(entrega))
+            System.out.println("Erro: já existe uma entrega com esse código no sistema");
+        else {
+            System.out.println("Entrega cadastrada com sucesso");
+            cliente.adicionaEntrega(entrega);
+        }
     }
 
+    //metodo para o menu do usuario
     private void mostrarClientesEEntregas() {
-        saida.println();
-        saida.println("Clientes cadastrados: ");
-        clientela.getClientela().forEach( cliente ->
-                saida.println("Cliente: " + cliente + "; Entregas: " + cliente.pesquisaEntregas()));
+        System.out.println("Clientes cadastrados: ");
 
-        //adiciona as informacoes no arquivo de saida em tempo real
-        saida.flush();
+        clientela.getClientela().forEach( cliente ->
+                System.out.println("Cliente: " + cliente + "; Entregas: " + cliente.pesquisaEntregas()));
     }
 
     private void cadastrarCliente() {
-        while (entradaArquivo.hasNext()) {
-            String email = entradaArquivo.nextLine();
+        while (entrada.hasNext()) {
+            String email = entrada.nextLine();
 
             if (email.equals("-1"))
                 break;
 
-            String nome = entradaArquivo.nextLine();
-            String endereco = entradaArquivo.nextLine();
+            String nome = entrada.nextLine();
+            String endereco = entrada.nextLine();
 
-            Cliente cliente = new Cliente(email, nome, endereco);
+            var cliente = new Cliente(email, nome, endereco);
 
             //verifica se existe algum cliente no sistema com o email lido
             if(clientela.cadastraCliente(cliente))
-                saida.println("1; " + cliente);
+                System.out.println("1; " + cliente);
         }
     }
 
     private void cadastrarEntrega() {
-        while (entradaArquivo.hasNext()) {
-            int codigo = entradaArquivo.nextInt();
-            entradaArquivo.nextLine();
+        while (entrada.hasNext()) {
+            int codigo = entrada.nextInt();
+            entrada.nextLine();
 
             if (codigo == -1)
                 break;
 
-            double valor = entradaArquivo.nextDouble();
-            entradaArquivo.nextLine();
+            double valor = entrada.nextDouble();
+            entrada.nextLine();
 
-            String descricao = entradaArquivo.nextLine();
+            String descricao = entrada.nextLine();
 
-            String email = entradaArquivo.nextLine();
+            String email = entrada.nextLine();
 
-            Cliente cliente = clientela.pesquisaCliente(email);
-            Entrega entrega = new Entrega(codigo, valor, descricao, cliente);
+            var cliente = clientela.pesquisaCliente(email);
+            var entrega = new Entrega(codigo, valor, descricao, cliente);
 
             //verifica se o cliente existe no sistema e se o codigo nao e repetido
             if (cliente != null && cadastroEntregas.cadastraEntrega(entrega)) {
                 cliente.adicionaEntrega(entrega);
-                saida.println("2; " + entrega + "; " + cliente.getEmail());
+                System.out.println("2; " + entrega + "; " + cliente.getEmail());
             }
         }
     }
@@ -197,8 +208,7 @@ public class ACMEDelivery {
         for(Cliente c : clientela.getClientela()) {
             count++;
         }
-
-        saida.println("3; " + count);
+        System.out.println("3; " + count);
     }
 
     private void mostrarEntregasCadastradas() {
@@ -207,57 +217,51 @@ public class ACMEDelivery {
         for(Entrega e : cadastroEntregas.getEntregas()) {
             count++;
         }
-
-        saida.println("4; " + count);
+        System.out.println("4; " + count);
     }
 
     private void mostrarDadosCliente() {
-        String email = entradaArquivo.nextLine();
+        String email = entrada.nextLine();
 
-        Cliente cliente = clientela.pesquisaCliente(email);
+        var cliente = clientela.pesquisaCliente(email);
 
         if (cliente == null)
-            saida.println("5; Cliente inexistente");
+            System.out.println("5; Cliente inexistente");
         else
-            saida.println("5; " + cliente);
+            System.out.println("5; " + cliente);
     }
 
     private void mostrarDadosEntrega() {
-        int codigo = entradaArquivo.nextInt();
-        entradaArquivo.nextLine();
+        int codigo = entrada.nextInt();
+        entrada.nextLine();
 
-        Entrega entrega = cadastroEntregas.pesquisaEntrega(codigo);
+        var entrega = cadastroEntregas.pesquisaEntrega(codigo);
 
         if (entrega == null)
-            saida.println("6; Entrega inexistente");
+            System.out.println("6; Entrega inexistente");
         else
-            saida.println("6; " + entrega + "; " + entrega.getCliente().getEmail() + "; " + entrega.getCliente().getNome() +
+            System.out.println("6; " + entrega + "; " + entrega.getCliente().getEmail() + "; " + entrega.getCliente().getNome() +
                     "; " + entrega.getCliente().getEndereco());
     }
 
     private void mostrarDadosEntregasCliente() {
-        String email = entradaArquivo.nextLine();
+        String email = entrada.nextLine();
         var entregasCliente = cadastroEntregas.pesquisaEntrega(email);
 
         if (clientela.pesquisaCliente(email) != null) {
-            //verifica se o cliente nao possui entregas
             if(clientela.pesquisaCliente(email).pesquisaEntregas().isEmpty())
-                saida.println("7; " + email + "; Nenhuma entrega para este cliente");
+                System.out.println("7; " + email + "; Nenhuma entrega para este cliente");
             else {
-                //percorre as entregas do cliente, mostrando uma por uma no output
-                for (int i = 0; i < entregasCliente.size(); i++) {
-                    saida.println("7; " + email + "; " + entregasCliente.get(i));
-                }
+                entregasCliente.forEach( e -> System.out.println("7; " + email + "; " + e));
             }
         } else
-            saida.println("7; Cliente inexistente");
+            System.out.println("7; Cliente inexistente");
     }
 
     private void mostrarDadosEntregaDeMaiorValor() {
         var entregas = cadastroEntregas.getEntregas();
         Entrega maiorEntrega = null;
 
-        //verifica se existem entregas no sistema
         if(!entregas.isEmpty()) {
             maiorEntrega = entregas.get(0);
 
@@ -266,28 +270,27 @@ public class ACMEDelivery {
                     maiorEntrega = e;
             }
         }
-
         if (maiorEntrega == null)
-            saida.println("8; Entrega inexistente");
+            System.out.println("8; Entrega inexistente");
         else
-            saida.println("8; " + maiorEntrega);
+            System.out.println("8; " + maiorEntrega);
     }
 
     private void mostrarEnderecoDeEntrega() {
-        int codigo = entradaArquivo.nextInt();
-        entradaArquivo.nextLine();
+        int codigo = entrada.nextInt();
+        entrada.nextLine();
 
-        Entrega entrega = cadastroEntregas.pesquisaEntrega(codigo);
+        var entrega = cadastroEntregas.pesquisaEntrega(codigo);
 
         if (entrega == null)
-            saida.println("9; Entrega inexistente");
+            System.out.println("9; Entrega inexistente");
         else
-            saida.println("9; " + entrega + "; " + entrega.getCliente().getEndereco());
+            System.out.println("9; " + entrega + "; " + entrega.getCliente().getEndereco());
     }
 
     private void somatorioValoresDeEntregasDeCliente() {
-        String email = entradaArquivo.nextLine();
-        Cliente cliente = clientela.pesquisaCliente(email);
+        String email = entrada.nextLine();
+        var cliente = clientela.pesquisaCliente(email);
 
         double somatorio = 0;
 
@@ -298,10 +301,15 @@ public class ACMEDelivery {
         }
 
         if (cliente == null)
-            saida.println("10; Cliente inexistente");
+            System.out.println("10; Cliente inexistente");
         else if(cliente.pesquisaEntregas().isEmpty())
-            saida.println("10; Entrega inexistente");
-        else                                                                    //arredonda o somatorio para duas casas decimais
-            saida.println("10; " + email + "; " + cliente.getNome() + "; " + new DecimalFormat("#.00").format(somatorio));
+            System.out.println("10; Entrega inexistente");
+        else
+            System.out.printf("10; %s; %s; %.2f%n", email, cliente.getNome(), somatorio); //arredonda o somatorio para duas casas decimais
+    }
+
+    private void restauraES() {
+        System.setOut(saidaPadrao);
+        entrada = new Scanner(System.in);
     }
 }
